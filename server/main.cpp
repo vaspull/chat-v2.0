@@ -28,11 +28,11 @@ private:
 
     [[noreturn]] void forkeepalive() {
         for (;;Sleep(300000)) {
-            std::string result = "ForKeepAlive\n";
+            std::string buff = "ForKeepAlive\n";
             Sleep(200);
             for (unsigned int i = 0; i <= serverdata.ClientCount; i++) {
                 if(serverdata.Connections[i]) {
-                    send(serverdata.Connections[i],result.c_str(),sizeof(result.c_str()),0);
+                    send(serverdata.Connections[i],buff.c_str(),static_cast<int>(buff.length()),0);
                 }
             }
         }

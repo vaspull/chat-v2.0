@@ -220,6 +220,7 @@ public:
         std::cout << "Maximum number of connections: " << max_conn << std::endl;
         serverdata.srv_ip = ip;
         serverdata.srv_port = port;
+        serverdata.max_connections = static_cast<unsigned int>(atoi(max_conn.c_str()));
         read_cfg.close();
         std::string answer = "1";
 
@@ -279,6 +280,7 @@ public:
                 std::cout << "Maximum number of connections: " << max_conn << std::endl;
                 serverdata.srv_ip = ip;
                 serverdata.srv_port = port;
+                serverdata.max_connections = static_cast<unsigned int>(atoi(max_conn.c_str()));
             }
         }
     }

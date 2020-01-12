@@ -14,16 +14,17 @@ class Server {
 
 private:
     struct my_struct {
-        SOCKET* Connections;
-        unsigned int ClientCount = 0;
+        SOCKET* Connections;     
         int ID = 0;
-        std::string name;
         int cfg = 0;
         int db = 0;
         int server = 0;
-        std::string srv_ip = "127.0.0.1"; //default value
-        std::string srv_port = "7770"; //default value
-        unsigned int max_connections = 32; //default value
+        unsigned int ClientCount = 0;
+        unsigned int max_connections = 32;  //default value
+        std::string srv_ip = "127.0.0.1";   //default value
+        std::string srv_port = "7770";      //default value
+        std::string echo_mode = "false";    //default value
+        std::string silent_mode = "false";  //default value
     };
 
     struct my_struct serverdata;

@@ -14,7 +14,7 @@ class Server {
 
 private:
     struct my_struct {
-        SOCKET* Connections;     
+        SOCKET* Connections;
         int ID = 0;
         int cfg = 0;
         int db = 0;
@@ -105,6 +105,30 @@ private:
         read_cfg.close();
     }
 
+    void extract_opt_2(std::string &ip, std::string &port, std::string &max_conn, std::string &echo_mode, std::string &silent_mode) {
+        std::ifstream read_cfg(CFG_PATH);
+        std::string cfg;
+        while (std::getline(read_cfg,cfg)) {
+            std::string temp = cfg;
+            unsigned int pos = cfg.find(':');
+            temp.erase(pos);
+            cfg.erase(0,pos+1);
+            std::cout << "temp2: " << temp << std::endl << cfg << std::endl;
+            system("pause");
+            if (temp == "server ip") {
+                ip = cfg;
+            } else if (temp == "port") {
+                port = cfg;
+            } else if (temp == "max connections") {
+                max_conn = cfg;
+            } else if (temp == "echo mode") {
+                echo_mode = cfg;
+            } else if (temp == "silent mode") {
+                silent_mode = cfg;
+            }
+        }
+    }
+
     void write_to_cfg () {
         system("cls");
         std::ofstream write_cfg(CFG_PATH, std::ofstream::trunc);
@@ -157,7 +181,8 @@ public:
 
     void options() {                                                                                                        //chek or create configuration file
         std::ifstream read_cfg(CFG_PATH);
-        std::string ip, port, max_conn, cfg;
+        //std::string ip, port, max_conn, cfg;
+        std::string ip, port, max_conn, cfg, echo_mode, silent_mode;
         if (!read_cfg.is_open()) {
             std::cout << "Configuration file 'srv.cfg' does not exist.\nCreate new?(default:yes): ";
             std::string answer;
@@ -172,6 +197,7 @@ public:
         }
 
         extract_opt(ip, port, max_conn);
+        //extract_opt_2(ip, port, max_conn, echo_mode, silent_mode); //for future
 
         if (!chek_ip(ip) || !chek_port(port) || !chek_max_conn(max_conn)) {
             std::cout << "Configuration file 'srv.cfg' is damaged.\nCreate new?(default:yes): ";

@@ -87,25 +87,7 @@ private:
         return 0;
     }
 
-    void extract_opt(std::string &ip, std::string &port, std::string &max_conn) {
-        std::ifstream read_cfg(CFG_PATH);
-        std::string cfg;
-        int i = 0;
-        while (std::getline(read_cfg,cfg)) {
-            if (i == 0) {
-                ip = cfg;
-                i++;
-            } else if (i == 1) {
-                port = cfg;
-                i++;
-            } else if (i == 2) {
-                max_conn = cfg;
-            }
-        }
-        read_cfg.close();
-    }
-
-    void extract_opt_2(std::string &ip, std::string &port, std::string &max_conn, std::string &echo_mode, std::string &silent_mode) {
+    void extract_opt(std::string &ip, std::string &port, std::string &max_conn, std::string &echo_mode, std::string &silent_mode) {
         std::ifstream read_cfg(CFG_PATH);
         std::string cfg;
         while (std::getline(read_cfg,cfg)) {
@@ -113,11 +95,9 @@ private:
             unsigned int pos = cfg.find(':');
             temp.erase(pos);
             cfg.erase(0,pos+1);
-            std::cout << "temp2: " << temp << std::endl << cfg << std::endl;
-            system("pause");
             if (temp == "server ip") {
                 ip = cfg;
-            } else if (temp == "port") {
+            } else if (temp == "server port") {
                 port = cfg;
             } else if (temp == "max connections") {
                 max_conn = cfg;
@@ -140,7 +120,7 @@ private:
         while (!chek) {
             std::getline(std::cin,ip);
             if (chek_ip(ip)) {
-                write_cfg << ip << std::endl;
+                write_cfg << "server ip:" << ip << std::endl;
                 chek++;
             } else {
                 std::cout << "The entered value does not comply with the ip v4 standard. Please enter a valid one.\n";
@@ -153,7 +133,7 @@ private:
         while (!chek) {
             std::getline(std::cin,port);
             if (chek_port(port)) {
-                write_cfg << port << std::endl;
+                write_cfg << "server port:" << port << std::endl;
                 chek++;
             } else {
                 std::cout << "The entered value does not comply with the port standard. Please enter a valid one.\n";
@@ -166,7 +146,7 @@ private:
         while (!chek) {
             std::getline(std::cin,max_conn);
             if (chek_max_conn(max_conn)) {
-                write_cfg << max_conn;
+                write_cfg << "max connections:" << max_conn;
                 chek++;
             } else {
                 std::cout << "Invalid value entered. Please enter a valid one.\n";
@@ -181,7 +161,6 @@ public:
 
     void options() {                                                                                                        //chek or create configuration file
         std::ifstream read_cfg(CFG_PATH);
-        //std::string ip, port, max_conn, cfg;
         std::string ip, port, max_conn, cfg, echo_mode, silent_mode;
         if (!read_cfg.is_open()) {
             std::cout << "Configuration file 'srv.cfg' does not exist.\nCreate new?(default:yes): ";
@@ -196,8 +175,7 @@ public:
             }
         }
 
-        extract_opt(ip, port, max_conn);
-        //extract_opt_2(ip, port, max_conn, echo_mode, silent_mode); //for future
+        extract_opt(ip, port, max_conn, echo_mode, silent_mode); //for future
 
         if (!chek_ip(ip) || !chek_port(port) || !chek_max_conn(max_conn)) {
             std::cout << "Configuration file 'srv.cfg' is damaged.\nCreate new?(default:yes): ";
@@ -215,7 +193,6 @@ public:
             std::cout << "Server ip: " << ip << std::endl;
             std::cout << "Server port: " << port << std::endl;
             std::cout << "Maximum number of connections: " << max_conn << std::endl;
-
             std::string answer = "1";
 
             while (answer == "1") {
@@ -225,7 +202,7 @@ public:
                     answer = "1";
                     write_to_cfg();
                 } else {
-                    extract_opt(ip, port, max_conn);
+                    extract_opt(ip, port, max_conn, echo_mode, silent_mode);
                     serverdata.srv_ip = ip;
                     serverdata.srv_port = port;
                     serverdata.max_connections = static_cast<unsigned int>(atoi(max_conn.c_str()));

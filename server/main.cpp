@@ -91,20 +91,30 @@ private:
         std::ifstream read_cfg(CFG_PATH);
         std::string cfg;
         while (std::getline(read_cfg,cfg)) {
+            while (cfg.find(' ', 0) != std::string::npos || cfg.find('\t') != std::string::npos) {
+                if (cfg.find(' ', 0) != std::string::npos) {
+                    cfg.erase(cfg.find(' '), 1);
+                } else if (cfg.find('\t') != std::string::npos) {
+                    cfg.erase(cfg.find('\t'), 1);
+                }
+            }
+
             std::string temp = cfg;
-            unsigned int pos = cfg.find(':');
-            temp.erase(pos);
-            cfg.erase(0,pos+1);
-            if (temp == "server ip") {
-                ip = cfg;
-            } else if (temp == "server port") {
-                port = cfg;
-            } else if (temp == "max connections") {
-                max_conn = cfg;
-            } else if (temp == "echo mode") {
-                echo_mode = cfg;
-            } else if (temp == "silent mode") {
-                silent_mode = cfg;
+
+            if (cfg.find('=') != std::string::npos) {
+                temp.erase(cfg.find('='));
+                cfg.erase(0,cfg.find('=')+1);
+                if (temp == "server_ip") {
+                    ip = cfg;
+                } else if (temp == "server_port") {
+                    port = cfg;
+                } else if (temp == "max_connections") {
+                    max_conn = cfg;
+                } else if (temp == "echo_mode") {
+                    echo_mode = cfg;
+                } else if (temp == "silent_mode") {
+                    silent_mode = cfg;
+                }
             }
         }
     }
@@ -120,7 +130,7 @@ private:
         while (!chek) {
             std::getline(std::cin,ip);
             if (chek_ip(ip)) {
-                write_cfg << "server ip:" << ip << std::endl;
+                write_cfg << "server_ip = " << ip << std::endl;
                 chek++;
             } else {
                 std::cout << "The entered value does not comply with the ip v4 standard. Please enter a valid one.\n";
@@ -133,7 +143,7 @@ private:
         while (!chek) {
             std::getline(std::cin,port);
             if (chek_port(port)) {
-                write_cfg << "server port:" << port << std::endl;
+                write_cfg << "server_port = " << port << std::endl;
                 chek++;
             } else {
                 std::cout << "The entered value does not comply with the port standard. Please enter a valid one.\n";
@@ -146,7 +156,7 @@ private:
         while (!chek) {
             std::getline(std::cin,max_conn);
             if (chek_max_conn(max_conn)) {
-                write_cfg << "max connections:" << max_conn;
+                write_cfg << "max_connections = " << max_conn;
                 chek++;
             } else {
                 std::cout << "Invalid value entered. Please enter a valid one.\n";

@@ -23,7 +23,7 @@ private:
         unsigned int max_connections = 32;  //default value
         std::string srv_ip = "127.0.0.1";   //default value
         std::string srv_port = "7770";      //default value
-        std::string echo_mode = "false";    //default value
+        std::string echo_mode = "true";    //default value
         std::string silent_mode = "false";  //default value
     };
 
@@ -87,6 +87,20 @@ private:
         return 0;
     }
 
+    int chek_silent_mode (std::string silent_mode) {
+        if (silent_mode == "false" || silent_mode == "true") {
+            return 1;
+        }
+        return 0;
+    }
+
+    int chek_echo_mode (std::string echo_mode) {
+        if (echo_mode == "false" || echo_mode == "true") {
+            return 1;
+        }
+        return 0;
+    }
+
     void extract_opt(std::string &ip, std::string &port, std::string &max_conn, std::string &echo_mode, std::string &silent_mode) {
         std::ifstream read_cfg(CFG_PATH);
         std::string cfg;
@@ -125,6 +139,8 @@ private:
         std::string ip;
         std::string port;
         std::string max_conn;
+        std::string echo_mode;
+        std::string silent_mode;
         std::cout << "Enter server ip: ";
         int chek = 0;
         while (!chek) {
@@ -156,15 +172,60 @@ private:
         while (!chek) {
             std::getline(std::cin,max_conn);
             if (chek_max_conn(max_conn)) {
-                write_cfg << "max_connections = " << max_conn;
+                write_cfg << "max_connections = " << max_conn  << std::endl;
                 chek++;
             } else {
                 std::cout << "Invalid value entered. Please enter a valid one.\n";
                 std::cout << "Enter the maximum number of connections (0-99999): ";
             }
         }
+
+        chek = 0;
+        std::cout << "Want to use the server in echo mode?(default:no): ";
+        while(!chek) {
+            std::getline(std::cin,echo_mode);
+            if (echo_mode == "y" || echo_mode == "Y" || echo_mode == "yes" || echo_mode == "YES" || echo_mode == "n" || echo_mode == "N" || echo_mode == "no" || echo_mode == "NO" || echo_mode == "") {
+                if (echo_mode == "n" || echo_mode == "N" || echo_mode == "no" || echo_mode == "NO" || echo_mode == "") {
+                    write_cfg << "echo_mode = false" << std::endl;
+                    chek++;
+                } else {
+                    write_cfg << "echo_mode = true" << std::endl;
+                    chek++;
+                }
+            } else {
+                std::cout << "Invalid value entered. Please enter 'yes' or 'no'.\n";
+                std::cout << "Want to use the server in echo mode?(default:no): ";
+            }
+        }
+
+        chek = 0;
+        std::cout << "Want to use silent startup mode?(default:no): ";
+        while(!chek) {
+            std::getline(std::cin,silent_mode);
+            if (silent_mode == "y" || silent_mode == "Y" || silent_mode == "yes" || silent_mode == "YES" || silent_mode == "n" || silent_mode == "N" || silent_mode == "no" || silent_mode == "NO" || silent_mode == "") {
+                if (silent_mode == "n" || silent_mode == "N" || silent_mode == "no" || silent_mode == "NO" || silent_mode == "") {
+                    write_cfg << "silent_mode = false" << std::endl;
+                    chek++;
+                } else {
+                    write_cfg << "silent_mode = true" << std::endl;
+                    chek++;
+                }
+            } else {
+                std::cout << "Invalid value entered. Please enter 'yes' or 'no'.\n";
+                std::cout << "Want to use silent startup mode?(default:no): ";
+            }
+        }
+
         write_cfg.close();
         serverdata.cfg = 1;
+    }
+
+    void refresh_serverdata (std::string ip, std::string port, std::string max_conn, std::string echo_mode, std::string silent_mode) {
+        serverdata.srv_ip = ip;
+        serverdata.srv_port = port;
+        serverdata.max_connections = static_cast<unsigned int>(atoi(max_conn.c_str()));
+        serverdata.echo_mode = echo_mode;
+        serverdata.silent_mode = silent_mode;
     }
 
 public:
@@ -185,9 +246,9 @@ public:
             }
         }
 
-        extract_opt(ip, port, max_conn, echo_mode, silent_mode); //for future
+        extract_opt(ip, port, max_conn, echo_mode, silent_mode);
 
-        if (!chek_ip(ip) || !chek_port(port) || !chek_max_conn(max_conn)) {
+        if (!chek_ip(ip) || !chek_port(port) || !chek_max_conn(max_conn) || !chek_silent_mode(silent_mode) || !chek_echo_mode(echo_mode)) {
             std::cout << "Configuration file 'srv.cfg' is damaged.\nCreate new?(default:yes): ";
             std::string answer;
             std::getline(std::cin,answer);
@@ -199,24 +260,28 @@ public:
         } else {
             serverdata.cfg = 1;
             system("cls");
-            std::cout << "Configuration file is ok.\n";
-            std::cout << "Server ip: " << ip << std::endl;
-            std::cout << "Server port: " << port << std::endl;
-            std::cout << "Maximum number of connections: " << max_conn << std::endl;
-            std::string answer = "1";
-
-            while (answer == "1") {
-                std::cout << "You want to re enter srv.cfg data?(default:no): ";
-                std::getline(std::cin,answer);
-                if (answer == "y" || answer == "Y" || answer == "Yes" || answer == "yes" || answer == "YES"){
-                    answer = "1";
-                    write_to_cfg();
-                } else {
-                    extract_opt(ip, port, max_conn, echo_mode, silent_mode);
-                    serverdata.srv_ip = ip;
-                    serverdata.srv_port = port;
-                    serverdata.max_connections = static_cast<unsigned int>(atoi(max_conn.c_str()));
+            if (silent_mode == "false") {
+                std::cout << "Configuration file is ok.\n";
+                std::cout << "Server ip: " << ip << std::endl;
+                std::cout << "Server port: " << port << std::endl;
+                std::cout << "Maximum number of connections: " << max_conn << std::endl;
+                std::cout << "Echo mode: " << echo_mode << std::endl;
+                std::cout << "Silent mode: " << silent_mode << std::endl;
+                std::string answer = "1";
+                while (answer == "1") {
+                    std::cout << "You want to re enter srv.cfg data?(default:no): ";
+                    std::getline(std::cin,answer);
+                    if (answer == "y" || answer == "Y" || answer == "Yes" || answer == "yes" || answer == "YES"){
+                        answer = "1";
+                        write_to_cfg();
+                    } else {
+                        extract_opt(ip, port, max_conn, echo_mode, silent_mode);
+                        refresh_serverdata(ip, port, max_conn, echo_mode, silent_mode);
+                    }
                 }
+            } else if (silent_mode == "true"){
+                extract_opt(ip, port, max_conn, echo_mode, silent_mode);
+                refresh_serverdata(ip, port, max_conn, echo_mode, silent_mode);
             }
         }
     }

@@ -231,6 +231,7 @@ private:
 public:
 
     void options() {                                                                                                        //chek or create configuration file
+        system("cls");
         std::ifstream read_cfg(CFG_PATH);
         std::string ip, port, max_conn, cfg, echo_mode, silent_mode;
         if (!read_cfg.is_open()) {
@@ -311,50 +312,83 @@ public:
         }
     }
 
-    void startServer() {
-        options();
+    int server_initialization() {
         SOCKET Connect;
-        SOCKET Listen;
-        WSAData data;
-        WORD version = MAKEWORD(2,2);
-        WSAStartup(version,&data);
-        struct addrinfo hints;
-        struct addrinfo * result;
         serverdata.Connections = static_cast<SOCKET*>(calloc((serverdata.max_connections+1),sizeof(SOCKET)));
+        WSADATA wsaData;
+        int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
+
+        if (result != 0) {
+            std::cerr << "WSAStartup failed: " << result << "\n";
+            return 0;
+        }
+
+        struct addrinfo* addr = nullptr;
+        struct addrinfo hints;
         ZeroMemory(&hints,sizeof(hints));
         hints.ai_family = AF_INET;
-        hints.ai_flags = AI_PASSIVE;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = IPPROTO_TCP;
-        getaddrinfo(nullptr,serverdata.srv_port.c_str(), &hints,&result);
-        Listen = socket(result->ai_family, result->ai_socktype,result->ai_protocol);
-        if (Listen) {
-            serverdata.server = 1;
-            bind(Listen,result->ai_addr,static_cast<int>(result->ai_addrlen));
-            listen(Listen,SOMAXCONN);
-            freeaddrinfo(result);
-            std::thread t1(&Server::forkeepalive, this);
-            status();
-            for (;;Sleep(75)) {
-                if((Connect = accept(Listen,nullptr,nullptr)) != INVALID_SOCKET && serverdata.ClientCount < serverdata.max_connections) {
-                    for (serverdata.ID = 0 ; serverdata.Connections[serverdata.ID] != 0;) {
-                        serverdata.ID++;
-                    }
-                    serverdata.Connections[serverdata.ID] = Connect;
-                    std::thread t2(&Server::sendMessage, this);
-                    t2.detach();
-                }
-            }
+        hints.ai_flags = AI_PASSIVE;
+        result = getaddrinfo(serverdata.srv_ip.c_str(),serverdata.srv_port.c_str(), &hints, &addr);
 
-        } else {
-            //logs err
+        if (result != 0) {
+            std::cerr << "getaddrinfo failed: " << result << "\n";
+            WSACleanup();
+            return 0;
         }
+
+        unsigned int listen_socket = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+
+        if (listen_socket == INVALID_SOCKET) {
+            std::cerr << "Error at socket: " << WSAGetLastError() << "\n";
+            freeaddrinfo(addr);
+            WSACleanup();
+            return 0;
+        }
+
+        result = bind(listen_socket,addr->ai_addr,static_cast<int>(addr->ai_addrlen));
+
+        if (result == SOCKET_ERROR) {
+            std::cerr << "bind failed with error: " << WSAGetLastError() << "\n";
+            freeaddrinfo(addr);
+            closesocket(listen_socket);
+            WSACleanup();
+            return 0;
+        }
+
+        if (listen(listen_socket, SOMAXCONN) == SOCKET_ERROR) {
+            std::cerr << "listen failed with error: " << WSAGetLastError() << "\n";
+            closesocket(listen_socket);
+            WSACleanup();
+            return 0;
+        }
+
+        serverdata.server = 1;
+
+        std::thread t1(&Server::forkeepalive, this);
+        for (;;Sleep(75)) {
+            if((Connect = accept(listen_socket,nullptr,nullptr)) != INVALID_SOCKET && serverdata.ClientCount < serverdata.max_connections) {
+                for (serverdata.ID = 0 ; serverdata.Connections[serverdata.ID] != 0;) {
+                    serverdata.ID++;
+                }
+                serverdata.Connections[serverdata.ID] = Connect;
+                std::thread t2(&Server::sendMessage, this);
+                t2.detach();
+            }
+        }
+    }
+
+    void start() {
+        options();
+        server_initialization();
+        status();
     }
 };
 
 int main()
 {
     Server srv;
-    srv.startServer();
+    srv.start();
     return 0;
 }

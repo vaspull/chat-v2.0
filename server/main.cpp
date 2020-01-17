@@ -15,11 +15,13 @@ class Server {
 private:
     struct my_struct {
         SOCKET* Connections;
-        int ID = 0;
+
         int cfg = 0;
         int db = 0;
-        int server = 0;
+        int server = 1;
+        unsigned int ID = 0;
         unsigned int ClientCount = 0;
+        unsigned int listen_socket;
         unsigned int max_connections = 32;  //default value
         std::string srv_ip = "127.0.0.1";   //default value
         std::string srv_port = "7770";      //default value
@@ -40,8 +42,8 @@ private:
         }
     }
 
-    void sendMessage(){
-        int id = serverdata.ID;
+    void send_echo(){
+        unsigned int id = serverdata.ID;
         serverdata.ClientCount++;
         int stop = 1;
         for (;stop == 1;Sleep(SLEEPTIME)) {
@@ -51,6 +53,29 @@ private:
                 buff[bytes_read] = '\0';
                 for (unsigned int i = 0; i <= serverdata.ClientCount; i++) {
                     if (serverdata.Connections[i]) {
+                        send(serverdata.Connections[i], buff, static_cast<int>(strlen(buff)), 0);
+                    }
+                }
+            } else {
+                closesocket(serverdata.Connections[id]);
+                serverdata.Connections[id] = 0;
+                stop = 0;
+                serverdata.ClientCount--;
+            }
+        }
+    }
+
+    void sendMessage(){
+        unsigned int id = serverdata.ID;
+        serverdata.ClientCount++;
+        int stop = 1;
+        for (;stop == 1;Sleep(SLEEPTIME)) {
+            int bytes_read;
+            char buff[BUFFERSIZE] = {0};
+            if ((bytes_read = recv(serverdata.Connections[id], buff, BUFFERSIZE, 0)) > 0) {
+                buff[bytes_read] = '\0';
+                for (unsigned int i = 0; i <= serverdata.ClientCount; i++) {
+                    if (serverdata.Connections[i] && i != id) {
                         send(serverdata.Connections[i], buff, static_cast<int>(strlen(buff)), 0);
                     }
                 }
@@ -228,6 +253,20 @@ private:
         serverdata.silent_mode = silent_mode;
     }
 
+    [[noreturn]]    void accept_incoming () {
+        SOCKET Connect;
+        for (;;Sleep(75)) {
+            if((Connect = accept(serverdata.listen_socket,nullptr,nullptr)) != INVALID_SOCKET && serverdata.ClientCount < serverdata.max_connections) {
+                for (serverdata.ID = 0 ; serverdata.Connections[serverdata.ID] != 0;) {
+                    serverdata.ID++;
+                }
+                serverdata.Connections[serverdata.ID] = Connect;
+                std::thread t2(&Server::sendMessage, this);
+                t2.detach();
+            }
+        }
+    }
+
 public:
 
     void options() {                                                                                                        //chek or create configuration file
@@ -293,26 +332,33 @@ public:
         }
     }
 
-    void status() {
-        system("cls");
-        if (serverdata.cfg) {
-            std::cout << "Configuration file is ok.\n";
-        } else {
-            std::cout << "Configuration file 'srv.cfg' does not exist. Used default values\n";
-        }
-        if (serverdata.db) {
-            std::cout << "DB file is ok.\n";
-        } else {
-            std::cout << "The database is not found or damaged, no user can connect to the server.\n";
-        }
-        if (serverdata.server) {
-            std::cout << "Server is running.\n";
-        } else {
-            std::cout << "Server is not running.\n";
+    [[noreturn]]   void status() {
+        while(true) {
+            system("cls");
+            if (serverdata.cfg) {
+                std::cout << "Configuration file is ok.\n";
+            } else {
+                std::cout << "Configuration file 'srv.cfg' does not exist. Used default values\n";
+            }
+            if (serverdata.db) {
+                std::cout << "DB file is ok.\n";
+            } else {
+                std::cout << "The database is not found or damaged, no user can connect to the server.\n";
+            }
+            if (serverdata.server) {
+                std::cout << "Server is running.\n";
+                std::cout << "Users connected: " << serverdata.ClientCount << "/" << serverdata.max_connections << std::endl;
+            } else {
+                std::cout << "Server is not running. Check the error log file.\n";
+            }
+            Sleep(5000);
         }
     }
 
-    int server_initialization() {
+    void start() {
+
+        options();
+
         SOCKET Connect;
         serverdata.Connections = static_cast<SOCKET*>(calloc((serverdata.max_connections+1),sizeof(SOCKET)));
         WSADATA wsaData;
@@ -320,7 +366,7 @@ public:
 
         if (result != 0) {
             std::cerr << "WSAStartup failed: " << result << "\n";
-            return 0;
+            serverdata.server = 0;
         }
 
         struct addrinfo* addr = nullptr;
@@ -335,7 +381,7 @@ public:
         if (result != 0) {
             std::cerr << "getaddrinfo failed: " << result << "\n";
             WSACleanup();
-            return 0;
+            serverdata.server = 0;
         }
 
         unsigned int listen_socket = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
@@ -344,7 +390,7 @@ public:
             std::cerr << "Error at socket: " << WSAGetLastError() << "\n";
             freeaddrinfo(addr);
             WSACleanup();
-            return 0;
+            serverdata.server = 0;
         }
 
         result = bind(listen_socket,addr->ai_addr,static_cast<int>(addr->ai_addrlen));
@@ -354,35 +400,38 @@ public:
             freeaddrinfo(addr);
             closesocket(listen_socket);
             WSACleanup();
-            return 0;
+            serverdata.server = 0;
         }
 
         if (listen(listen_socket, SOMAXCONN) == SOCKET_ERROR) {
             std::cerr << "listen failed with error: " << WSAGetLastError() << "\n";
             closesocket(listen_socket);
             WSACleanup();
-            return 0;
+            serverdata.server = 0;
         }
 
-        serverdata.server = 1;
+        std::thread t1(&Server::status, this);
+        t1.detach();
 
-        std::thread t1(&Server::forkeepalive, this);
-        for (;;Sleep(75)) {
-            if((Connect = accept(listen_socket,nullptr,nullptr)) != INVALID_SOCKET && serverdata.ClientCount < serverdata.max_connections) {
-                for (serverdata.ID = 0 ; serverdata.Connections[serverdata.ID] != 0;) {
-                    serverdata.ID++;
+        if (serverdata.server == 1) {
+            std::thread t2(&Server::forkeepalive, this);
+            t2.detach();
+            for (;;Sleep(75)) {
+                if((Connect = accept(listen_socket,nullptr,nullptr)) != INVALID_SOCKET && serverdata.ClientCount < serverdata.max_connections) {
+                    for (serverdata.ID = 0 ; serverdata.Connections[serverdata.ID] != 0;) {
+                        serverdata.ID++;
+                    }
+                    serverdata.Connections[serverdata.ID] = Connect;
+                    if(serverdata.echo_mode == "true") {
+                        std::thread t3(&Server::send_echo, this);
+                        t3.detach();
+                    } else if (serverdata.echo_mode == "false") {
+                        std::thread t3(&Server::sendMessage, this);
+                        t3.detach();
+                    }
                 }
-                serverdata.Connections[serverdata.ID] = Connect;
-                std::thread t2(&Server::sendMessage, this);
-                t2.detach();
             }
         }
-    }
-
-    void start() {
-        options();
-        server_initialization();
-        status();
     }
 };
 

@@ -4,5 +4,9 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
-        main.cpp
+        main.cpp \
+        sqlite3.c
 LIBS += -lws2_32
+
+HEADERS += \
+    sqlite3.h

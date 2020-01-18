@@ -4,6 +4,7 @@
 #include <fstream>
 #include <regex>
 #include <thread>
+#include <sqlite3.h>
 
 #define BUFFERSIZE 50000
 #define SLEEPTIME 200
@@ -267,6 +268,25 @@ private:
         }
     }
 
+    int db() {
+
+        const char* _SQLquery= "CREATE TABLE IF NOT EXISTS test(a,b,c); INSERT INTO test VALUES(1,2,3);";
+        sqlite3 *db = nullptr; // хэндл объекта соединение к БД
+        char *err = nullptr;
+        // open connection
+        if (sqlite3_open("test_database.db", &db)) {
+            fprintf(stderr, "Error create DB: %s\n", sqlite3_errmsg(db));
+        } else if (sqlite3_exec(db, _SQLquery, nullptr, nullptr, &err)) {
+            // execute _SQLquery
+            fprintf(stderr, "Error SQL query: %sn", err);
+            sqlite3_free(err);
+        }
+        // close connеction
+        sqlite3_close(db);
+        fprintf(stderr, "error SQL: %sn", err);
+        return 0;
+    }
+
 public:
 
     void options() {                                                                                                        //chek or create configuration file
@@ -357,6 +377,7 @@ public:
 
     void start() {
 
+        //db();
         options();
 
         SOCKET Connect;

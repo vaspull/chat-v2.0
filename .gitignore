@@ -7,3 +7,4 @@ build-server-Desktop_Qt_5_13_1_MinGW_32_bit-Debug/Makefile
 *.Release
 *.cfg
 *.db
+build-simple_echo_server-Desktop_Qt_5_13_1_MinGW_32_bit-Debug/Makefile

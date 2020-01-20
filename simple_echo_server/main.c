@@ -32,7 +32,7 @@ int main()
             for(u_int a = 0; a <= sizeof(buffer); ++a) {
                 buffer[a] = '\0';
             }
-            if (Connections[i] != 4294967295 && Connections[i] > 0) {
+            if (Connections[i]) {
                 if ((bytes_read = recv(Connections[i], buffer, sizeof(buffer),0)) != SOCKET_ERROR ) {
                     for (u_int b = 0;b <= connection_count;++b) {
                         if (Connections[b]) {

@@ -32,11 +32,12 @@ int main()
         }
         for(u_int i = 0; i <= max_conn; ++i) {
             if (Connections[i]) {
-                char buffer[500];
+                char buffer[50];
                 for(u_int a = 0; a <= sizeof(buffer); ++a) {
                     buffer[a] = '\0';
                 }
                 if ((bytes_read = recv(Connections[i], buffer, sizeof(buffer),0)) != SOCKET_ERROR ) {
+                    printf("%d\n", bytes_read);
                     for (u_int b = 0;b <= max_conn;++b) {
                         if (Connections[b]) {
                             if ((bytes_write = send(Connections[b],buffer,(int)strlen(buffer),0)) == -1) {

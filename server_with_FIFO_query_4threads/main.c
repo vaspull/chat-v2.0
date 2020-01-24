@@ -29,6 +29,50 @@ List* createList() {
     return query;
 }
 
+int finde(char c, char *buf) {
+    for (int i = 0; i < (int)strlen(buf); ++i) {
+        if (buf[i] == c) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* если count = -1, то удалется все что правее символа в позиции int pos,
+ * если 0, то все что левее,
+ * если другое значение, то удаляется то количество символом которое задано count начиная с символа в позиции pos*/
+
+void erase(int count, int pos, char *buf) {
+    char *tmp = (char*)malloc(strlen(buf));
+    for (u_int x = 0; x <= sizeof(buf); ++x) tmp[x] = '\0';
+    int i = 0;
+    if (pos >= 0 ) {
+        if (count == -1) {
+            for (; i < pos; ++i) {
+                tmp[i] = buf[i];
+            }
+            for (u_int x = 0; x <= strlen(buf); ++x) buf[x] = '\0';
+            strcpy(buf,tmp);
+        } else if (count == 0) {
+            u_int a = 0;
+            for (i = pos; i < (int)strlen(buf); ++i) {
+                tmp[a++] = buf[i];
+            }
+            for (u_int x = 0; x <= strlen(buf); ++x) buf[x] = '\0';
+            strcpy(buf,tmp);
+        } else {
+            for (; i < pos; i++){
+                tmp[i] = buf[i];
+            }
+            for (; i < (int)strlen(buf); i++) {
+                tmp[i] = buf[i+count];
+            }
+            for (u_int x = 0; x <= sizeof(buf); ++x) buf[x] = '\0';
+            strcpy(buf,tmp);
+        }
+    }
+}
+
 void add_to_end(List *query, char *data) {
     Elem *newelem = (Elem*) malloc(sizeof(Elem));
     for (u_int i = 0; i <= BUFFSIZE; i++) {

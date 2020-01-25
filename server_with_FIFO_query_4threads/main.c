@@ -2,6 +2,9 @@
 #include <ws2tcpip.h>
 #define BUFFSIZE 500
 #define MAXCONN 32
+#define MAX_GETLINE 500
+#define OPT 200
+#define CFG "srv.cfg"
 
 typedef struct _Elem{
     char data[BUFFSIZE];
@@ -29,6 +32,8 @@ List* createList() {
     return query;
 }
 
+/*возвращает позицию искомого символа 'c' в массиве buf,
+ * если искомого символа в массиве нет, то возвращает -1*/
 int finde(char c, char *buf) {
     for (int i = 0; i < (int)strlen(buf); ++i) {
         if (buf[i] == c) {
@@ -41,7 +46,6 @@ int finde(char c, char *buf) {
 /* если count = -1, то удалется все что правее символа в позиции int pos,
  * если 0, то все что левее,
  * если другое значение, то удаляется то количество символом которое задано count начиная с символа в позиции pos*/
-
 void erase(int count, int pos, char *buf) {
     char *tmp = (char*)malloc(strlen(buf));
     for (u_int x = 0; x <= sizeof(buf); ++x) tmp[x] = '\0';
@@ -71,6 +75,65 @@ void erase(int count, int pos, char *buf) {
             strcpy(buf,tmp);
         }
     }
+}
+
+char *getline () {
+    char *buff = (char*)malloc(MAX_GETLINE);
+    for(u_int i = 0; i <= sizeof(buff); i++) {
+        buff[i] ='\0';
+    }
+    int c = getchar();
+    for(u_int i = 0; c != '\n'; ++i) {
+        if ( i == MAX_GETLINE) {
+            buff[i] = '\0';
+            return buff;
+        } else {
+            buff[i] = (char)c;
+            c = getchar();
+            if (c == '\n'){
+                buff[++i] = '\0';
+            }
+        }
+    }
+    return buff;
+}
+
+void extract_opt(char *ip, char *port, char *max_conn, char *echo_mode, char *silent_mode) {
+    FILE *cfg_file;
+    cfg_file = fopen(CFG, "r");
+    char tmp[OPT], cfg[OPT];
+    for(u_int i = 0; i < OPT; i++) {
+        tmp[i] = '\0';
+        cfg[i] = '\0';
+    }
+    while (fgets(cfg,OPT,cfg_file) != NULL) {
+        while (finde(' ', cfg) != -1) {
+            erase(1,finde(' ', cfg),cfg);
+        }
+        while (finde('\t', cfg) != -1) {
+            erase(1,finde('\t', cfg),cfg);
+        }
+        while (finde('\n', cfg) != -1) {
+            erase(1,finde('\n', cfg),cfg);
+        }
+        strcpy(tmp,cfg);
+        if (finde('=', cfg) != -1) {
+            erase(-1,finde('=',cfg),tmp);
+            erase(0,finde('=',cfg)+1, cfg);
+            if (strncmp(tmp, "server_ip", 9) == 0) {
+                strcpy(ip,cfg);
+            } else if (strncmp(tmp, "server_port", 11) == 0) {
+                strcpy(port,cfg);
+            } else if (strncmp(tmp, "max_connections", 15) == 0) {
+                strcpy(max_conn,cfg);
+            } else if (strncmp(tmp, "echo_mode", 9) == 0) {
+                strcpy(echo_mode,cfg);
+            } else if (strncmp(tmp, "silent_mode", 11) == 0) {
+                strcpy(silent_mode,cfg);
+            }
+        }
+    }
+    fclose(cfg_file);
 }
 
 void add_to_end(List *query, char *data) {

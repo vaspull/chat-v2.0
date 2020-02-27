@@ -46,36 +46,43 @@ int finde(char c, char *buf) {
 /* если count = -1, то удалется все что правее символа в позиции int pos,
  * если 0, то все что левее,
  * если другое значение, то удаляется то количество символом которое задано count начиная с символа в позиции pos*/
+
+void clear(u_int size, char *buffer) {
+    for (u_int i = 0; i <= size; i++ ) {
+        buffer[i] = '\0';
+    }
+}
+
 void erase(int count, int pos, char *buf) {
-    char *tmp = (char*)malloc(strlen(buf));
-    for (u_int x = 0; x <= sizeof(buf); ++x) tmp[x] = '\0';
+    char tmp2[OPT];
+    clear(OPT, tmp2);
     int i = 0;
     if (pos >= 0 ) {
         if (count == -1) {
             for (; i < pos; ++i) {
-                tmp[i] = buf[i];
+                tmp2[i] = buf[i];
             }
-            for (u_int x = 0; x <= strlen(buf); ++x) buf[x] = '\0';
-            strcpy(buf,tmp);
+            strncpy(buf,tmp2,OPT);
+            buf[strlen(buf)] = '\0';
         } else if (count == 0) {
-            u_int a = 0;
-            for (i = pos; i < (int)strlen(buf); ++i) {
-                tmp[a++] = buf[i];
+            for (u_int a = 0; pos < (int)strlen(buf);) {
+                tmp2[a++] = buf[pos++];
             }
-            for (u_int x = 0; x <= strlen(buf); ++x) buf[x] = '\0';
-            strcpy(buf,tmp);
+            strncpy(buf,tmp2,OPT);
+            buf[strlen(buf)] = '\0';
         } else {
-            for (; i < pos; i++){
-                tmp[i] = buf[i];
+            for (;i < pos; ++i) {
+                tmp2[i] = buf[i];
             }
-            for (; i < (int)strlen(buf); i++) {
-                tmp[i] = buf[i+count];
+            for (;i < ((int)strlen(buf)-count); ++i) {
+                tmp2[i] = buf[i+count];
             }
-            for (u_int x = 0; x <= sizeof(buf); ++x) buf[x] = '\0';
-            strcpy(buf,tmp);
+            strncpy(buf,tmp2,OPT);
+            buf[strlen(buf)] = '\0';
         }
     }
 }
+
 
 char *getline () {
     char *buff = (char*)malloc(MAX_GETLINE);
@@ -204,7 +211,7 @@ __attribute__ ((noreturn)) void recieve_messages(Server *server) {
         } else {
             count = 0;
         }
-        Sleep(1);
+        Sleep(10);
     }
 }
 
@@ -227,7 +234,7 @@ __attribute__ ((noreturn)) void send_messages(Server *server) {
                 delete_first(server->query);
             }
         }
-        Sleep(1);
+        Sleep(10);
     }
 }
 
